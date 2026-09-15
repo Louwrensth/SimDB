@@ -41,5 +41,5 @@ ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
 EXPOSE 5000
 
 # Run under Gunicorn rather than the Werkzeug dev server
-CMD ["uv", "run", "gunicorn", "--bind=0.0.0.0:5000", "--workers=3", "simdb.remote.wsgi:app"]
+CMD ["uv", "run", "gunicorn", "--bind=0.0.0.0:5000", "--workers=3", "--access-logfile=-", "--error-logfile=-", "simdb.remote.wsgi:app"]
 
