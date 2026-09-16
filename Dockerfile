@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install dependencies in their own layer, cached independently.
 COPY uv.lock pyproject.toml ./
-RUN uv sync --locked --no-install-project --extra all
+RUN uv sync --locked --no-install-project --no-build --extra all
 
 ARG APP_VERSION=0.0.0
 
