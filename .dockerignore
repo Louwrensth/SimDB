@@ -17,3 +17,5 @@ ci/
 Dockerfile
 Dockerfile.dev
 docker-compose*.yml
+/sims
+/upload_folder
