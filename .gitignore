@@ -31,3 +31,5 @@ src/simdb/_version.py
 *.egg-info
 *.egg
 *.whl
+/sims
+/upload_folder
