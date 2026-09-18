@@ -8,9 +8,8 @@
 .coverage
 **/__pycache__
 **/*.pyc
-*.egg-info
+**/*.egg-info
 *.log
-upload_folder/
 docs/
 tests/
 ci/
