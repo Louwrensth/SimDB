@@ -59,7 +59,6 @@ server = [
     "flask-caching>=1.10",
     "flask-compress>=1.12",
     "flask-cors>=3",
-    "flask-mail>=0.10.0",
     "flask-restx>=1.0.0",
     "gunicorn>=26.2.0",
     "python-magic~=0.4",
