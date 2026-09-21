@@ -32,6 +32,7 @@ LABEL org.opencontainers.image.title="SimDB" \
 # Add the project source and finish the sync.
 ENV SETUPTOOLS_SCM_PRETEND_VERSION="${APP_VERSION}"
 COPY alembic.ini ./
+COPY docker/gunicorn.conf.py ./docker/gunicorn.conf.py
 COPY src/ ./src/
 RUN uv sync --locked --extra all
 
@@ -40,5 +41,4 @@ ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
 EXPOSE 5000
 
 # Run under Gunicorn rather than the Werkzeug dev server
-CMD ["uv", "run", "gunicorn", "--bind=0.0.0.0:5000", "--workers=3", "--access-logfile=-", "--error-logfile=-", "simdb.remote.wsgi:app"]
-
+CMD ["uv", "run", "gunicorn", "--config=/app/docker/gunicorn.conf.py", "simdb.remote.wsgi:app"]

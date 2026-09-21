@@ -23,9 +23,15 @@ services:
     container_name: ${SIMDB_CONTAINER_NAME:-simdb-web}
     environment:
       IMAS_LOCAL_HOSTS: localhost
+      GUNICORN_BIND: ${GUNICORN_BIND:-0.0.0.0:5000}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      GUNICORN_WORKER_CLASS: ${GUNICORN_WORKER_CLASS:-gthread}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
     ports:
       - "5000:5000"
     volumes:
+      - ./docker/gunicorn.conf.py:/app/docker/gunicorn.conf.py:ro
       - ./validation:/app/validation:ro
       - ./config:/app/config:ro
       - ./tmp/partition_data:/data/simdb/partition:ro

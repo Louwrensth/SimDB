@@ -76,6 +76,19 @@ match the published port.
 See the [server configuration reference](../../reference/server-configuration.md)
 for all options.
 
+### Gunicorn runtime
+
+The `web` service runs Gunicorn with three `gthread` workers, four threads per
+worker, and a 120-second request timeout by default. Override these settings
+through the environment when starting Compose:
+
+```bash
+GUNICORN_WORKERS=4 GUNICORN_THREADS=8 GUNICORN_TIMEOUT=180 docker compose up --build
+```
+
+The available variables are `GUNICORN_BIND`, `GUNICORN_WORKERS`,
+`GUNICORN_WORKER_CLASS`, `GUNICORN_THREADS`, and `GUNICORN_TIMEOUT`.
+
 ## Start
 
 ```bash
