@@ -29,7 +29,7 @@ LABEL org.opencontainers.image.title="SimDB" \
       io.simdb.component="server"
 
 # Add the project source and finish the sync.
-ENV SETUPTOOLS_SCM_PRETEND_VERSION="${APP_VERSION}"
+ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_IMAS_SIMDB="${APP_VERSION}"
 COPY alembic.ini ./
 COPY docker/gunicorn.conf.py ./docker/gunicorn.conf.py
 COPY src/ ./src/
