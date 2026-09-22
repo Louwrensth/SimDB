@@ -2,8 +2,7 @@
 FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
     AS build
 
-ENV UV_NO_DEV=1 \
-    UV_LINK_MODE=copy \
+ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1
 
@@ -19,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install dependencies in their own layer, cached independently.
 COPY uv.lock pyproject.toml ./
-RUN uv sync --locked --no-install-project --no-build --extra all
+RUN uv sync --locked --no-dev --no-install-project --no-build --extra all
 
 ARG APP_VERSION=0.0.0
 
@@ -28,7 +27,8 @@ ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_IMAS_SIMDB="${APP_VERSION}"
 COPY alembic.ini ./
 COPY docker/gunicorn.conf.py ./docker/gunicorn.conf.py
 COPY src/ ./src/
-RUN uv sync --locked --extra all
+COPY alembic/ ./alembic/
+RUN uv sync --locked --no-dev --extra all
 
 ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
 
@@ -36,8 +36,7 @@ ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
 FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
     AS test
 
-ENV UV_NO_DEV=1 \
-    UV_LINK_MODE=copy \
+ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1
 
@@ -68,8 +67,7 @@ RUN uv run python -m pytest --cov=simdb --cov-report=term-missing --cov-report=x
 FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
     AS service
 
-ENV UV_NO_DEV=1 \
-    UV_LINK_MODE=copy \
+ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1
 

@@ -1,8 +1,7 @@
 ARG PYVER=3.12
 FROM ghcr.io/astral-sh/uv:python${PYVER}-trixie-slim
 
-ENV UV_NO_DEV=1 \
-    UV_LINK_MODE=copy \
+ENV UV_LINK_MODE=copy \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
@@ -17,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install dependencies in their own layer, cached independently.
 COPY uv.lock pyproject.toml ./
-RUN uv sync --locked --no-install-project --no-build --extra all
+RUN uv sync --locked --no-dev --no-install-project --no-build --extra all
 
 # Add the project source and finish the sync.
 ARG APP_VERSION=0.0.0
@@ -38,7 +37,8 @@ ENV SIMDB_GIT_COMMIT="${SIMDB_GIT_COMMIT}"
 
 COPY alembic.ini ./
 COPY src/ ./src/
-RUN uv sync --locked --extra all
+COPY alembic/ ./alembic/
+RUN uv sync --locked --no-dev --extra all
 
 ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
 
