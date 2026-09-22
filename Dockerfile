@@ -1,4 +1,6 @@
-FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3
+# Build stage: Install dependencies and prepare the application
+FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
+    AS build
 
 ENV UV_NO_DEV=1 \
     UV_LINK_MODE=copy \
@@ -21,19 +23,49 @@ RUN uv sync --locked --no-install-project --no-build --extra all
 
 ARG APP_VERSION=0.0.0
 
-LABEL org.opencontainers.image.title="SimDB" \
-      org.opencontainers.image.description="ITER Simulation Management Tool" \
-      org.opencontainers.image.source="https://github.com/iterorganization/SimDB" \
-      org.opencontainers.image.licenses="LGPL-3.0-only" \
-      org.opencontainers.image.version="${APP_VERSION}" \
-      io.simdb.component="server"
-
 # Add the project source and finish the sync.
 ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_IMAS_SIMDB="${APP_VERSION}"
 COPY alembic.ini ./
 COPY docker/gunicorn.conf.py ./docker/gunicorn.conf.py
 COPY src/ ./src/
 RUN uv sync --locked --extra all
+
+ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
+
+# Runtime stage: Minimal image with only runtime dependencies
+FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
+    AS service
+
+ENV UV_NO_DEV=1 \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install only runtime dependencies (no build-essential, no *-dev variants, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    libldap2 \
+    libsasl2-2 \
+    libmagic1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the prepared application and dependencies from build stage
+COPY --from=build /app/.venv /app/.venv
+COPY --from=build /app/alembic.ini ./
+COPY --from=build /app/docker/gunicorn.conf.py ./docker/gunicorn.conf.py
+COPY --from=build /app/src/ ./src/
+COPY --from=build /app/alembic/ ./alembic/
+
+ARG APP_VERSION=0.0.0
+
+LABEL org.opencontainers.image.title="SimDB" \
+      org.opencontainers.image.description="SimDB Server — ITER simulation management tool" \
+      org.opencontainers.image.source="https://github.com/iterorganization/SimDB" \
+      org.opencontainers.image.licenses="LGPL-3.0-only" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      io.simdb.component="server"
 
 ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
 
