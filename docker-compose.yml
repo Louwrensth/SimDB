@@ -10,7 +10,8 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://simdb:simdb@postgres:5432/simdb
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     command: uv run alembic upgrade head
     restart: "no"
 
@@ -104,13 +105,15 @@ services:
       - POSTGRES_USER=simdb
       - POSTGRES_PASSWORD=simdb
       - POSTGRES_DB=simdb
+      - POSTGRES_INITDB_ARGS=--locale-provider=icu --icu-locale=en_US.utf8  # workaround for alpine not having locale
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U simdb"]
-      interval: 1s
+      test: ["CMD-SHELL", "pg_isready -U simdb -d simdb"]
+      interval: 2s
       timeout: 5s
-      retries: 5
+      retries: 15
+      start_period: 30s
     restart: unless-stopped
 
 volumes:
