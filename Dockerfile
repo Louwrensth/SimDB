@@ -1,5 +1,4 @@
-ARG PYVER=3.12
-FROM ghcr.io/astral-sh/uv:python${PYVER}-trixie-slim
+FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3
 
 ENV UV_NO_DEV=1 \
     UV_LINK_MODE=copy \
