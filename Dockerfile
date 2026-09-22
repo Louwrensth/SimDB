@@ -27,7 +27,6 @@ ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_IMAS_SIMDB="${APP_VERSION}"
 COPY alembic.ini ./
 COPY docker/gunicorn.conf.py ./docker/gunicorn.conf.py
 COPY src/ ./src/
-COPY alembic/ ./alembic/
 RUN uv sync --locked --no-dev --extra all
 
 ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
@@ -67,6 +66,9 @@ RUN uv run python -m pytest --cov=simdb --cov-report=term-missing --cov-report=x
 FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
     AS service
 
+ARG APP_UID=1000
+ARG APP_GID=1000
+
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -81,11 +83,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN groupadd --gid ${APP_GID} simdb \
+    && useradd --uid ${APP_UID} --gid ${APP_GID} --create-home --shell /usr/sbin/nologin simdb \
+    && mkdir -p /data/simdb/simulations /home/simdb/.gunicorn \
+    && chown -R simdb:simdb /data/simdb /home/simdb /app
+
 # Copy the prepared application and dependencies from build stage
-COPY --from=build /app/.venv /app/.venv
-COPY --from=build /app/alembic.ini ./
-COPY --from=build /app/docker/gunicorn.conf.py ./docker/gunicorn.conf.py
-COPY --from=build /app/src/ ./src/
+COPY --from=build --chown=simdb:simdb /app/.venv /app/.venv
+COPY --from=build --chown=simdb:simdb /app/alembic.ini ./
+COPY --from=build --chown=simdb:simdb /app/docker/gunicorn.conf.py ./docker/gunicorn.conf.py
+COPY --from=build --chown=simdb:simdb /app/src/ ./src/
 
 ARG APP_VERSION=0.0.0
 
@@ -97,6 +104,8 @@ LABEL org.opencontainers.image.title="SimDB" \
       io.simdb.component="server"
 
 ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
+
+USER simdb
 
 EXPOSE 5000
 
