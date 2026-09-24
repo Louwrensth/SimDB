@@ -1,0 +1,152 @@
+SHELL := /bin/sh
+
+VERSION := $(shell git describe --tags --long --always 2>/dev/null | sed -r 's/-([0-9]+)/.dev\1/;s/-/+/' || echo 0.0.0)
+PROJECT_NAME ?= simdb-server
+COMPOSE_PROJECT_NAME ?= $(PROJECT_NAME)
+
+COMPOSE_FILE ?= docker-compose.yml:docker-compose.systemd.yml
+
+DOCKER_CMD ?= docker
+DOCKER_BUILD ?= $(DOCKER_CMD) build --build-arg APP_VERSION="$(VERSION)"
+DOCKER_COMPOSE ?= APP_VERSION="$(VERSION)" COMPOSE_FILE="$(COMPOSE_FILE)" $(DOCKER_CMD) compose
+
+# systemd-install destinations
+package_optdir ?= /opt/$(PROJECT_NAME)
+package_etcdir ?= /etc/$(PROJECT_NAME)
+systemd_unitdir ?= /etc/systemd/system
+
+BUILD_IMAGE := simdb-server:build
+SERVICE_IMAGE := simdb-server:service
+
+.DEFAULT_GOAL := service
+
+.PHONY: \
+	build \
+	builder \
+	certs \
+	dev \
+	dist \
+	distclean \
+	down \
+	help \
+	lint \
+	list \
+	list-all \
+	logs-f \
+	service \
+	shell \
+	systemd-disable \
+	systemd-daemon-reload \
+	systemd-enable \
+	systemd-installdirs \
+	systemd-install \
+	systemd-status \
+	systemd-start \
+	systemd-stop \
+	systemd-uninstall \
+	test \
+	type-check \
+	up \
+	update-base \
+	update-deps \
+	version
+
+help:
+	@echo "Core workflow:"
+	@echo "  make service         Build and tag final service image"
+	@echo ""
+	@echo "Compose service (make service first):"
+	@echo "  make up              Start simdb-server service using prebuilt service image"
+	@echo "  make down            Stop simdb-server service"
+	@echo "  make list            List the web container for this compose project"
+	@echo "  make list-all        List all containers for this compose project"
+	@echo "  make logs-f          Follow logs of the started simdb-server service"
+	@echo "  make shell           Enter shell in the started simdb-server service"
+	@echo ""
+	@echo "Systemd integration (run with sudo; see docs/how-to/operate-server/install-server.md):"
+	@echo "  sudo make systemd-install           Copy files to $(package_optdir) and $(package_etcdir)"
+	@echo "  sudo make systemd-enable            systemctl daemon-reload && systemctl enable simdb-server"
+	@echo "  sudo make systemd-start             systemctl start  simdb-server"
+	@echo "  sudo make systemd-status            systemctl status simdb-server"
+	@echo "  sudo make systemd-stop              systemctl stop   simdb-server"
+	@echo "  sudo make systemd-disable           systemctl stop && systemctl disable simdb-server"
+	@echo "  sudo make systemd-uninstall         Remove files installed by systemd-install"
+	
+service:
+	$(DOCKER_BUILD) --target service -t $(SERVICE_IMAGE) .
+
+# Compose targets
+up:
+	$(DOCKER_COMPOSE) --profile with_workers up -d --no-build
+
+down:
+	$(DOCKER_COMPOSE) --profile with_workers down
+
+list:
+	$(DOCKER_CMD) ps \
+		--filter "label=com.docker.compose.project=$(COMPOSE_PROJECT_NAME)" \
+		--filter "label=com.docker.compose.service=web"
+
+list-all:
+	$(DOCKER_CMD) ps \
+		--filter "label=com.docker.compose.project=$(COMPOSE_PROJECT_NAME)"
+
+logs-f:
+	$(DOCKER_COMPOSE) logs -f web
+
+shell:
+	$(DOCKER_COMPOSE) exec web sh
+
+# Systemd integration (run with sudo).
+systemd-installdirs:
+	mkdir -p \
+		$(DESTDIR)/$(package_optdir)/docker \
+		$(DESTDIR)/$(package_optdir)/config \
+		$(DESTDIR)/$(package_optdir)/validation \
+		$(DESTDIR)/$(package_optdir)/upload_folder \
+		$(DESTDIR)/$(package_optdir)/tmp/partition_data \
+		$(DESTDIR)/$(package_etcdir) \
+		$(DESTDIR)/$(systemd_unitdir)
+
+# NO NEED: 
+#       - ./docker/gunicorn.conf.py:/app/docker/gunicorn.conf.py:ro
+# NEED: 
+#       - ./validation:/app/validation:ro
+#       - ./config:/app/config:ro
+#       - ./tmp/partition_data:/data/simdb/partition:ro
+#       - ./upload_folder:/data/simdb/simulations
+
+systemd-install: systemd-installdirs
+	install -m 644 \
+		docker-compose.systemd.yml \
+		docker-compose.yml \
+		$(DESTDIR)/$(package_optdir)
+	install -m 644 \
+		validation/iter_scenarios_validation.yaml \
+		$(DESTDIR)/$(package_optdir)/validation
+	install -m 644 \
+		config/simdb.cfg \
+		$(DESTDIR)/$(package_optdir)/config
+	@if [ ! -f "$(DESTDIR)/$(package_etcdir)/simdb-server.env" ]; then \
+		install -m 644 docker/scripts/simdb-server.env.example \
+			"$(DESTDIR)/$(package_etcdir)/simdb-server.env"; \
+	fi
+	install -m 644 \
+		docker/scripts/simdb-server.service \
+		$(DESTDIR)/$(systemd_unitdir)/simdb-server.service
+
+systemd-uninstall: systemd-disable
+	-rm -f --interactive $(DESTDIR)/$(systemd_unitdir)/simdb-server.service
+	-rm -rf --interactive $(DESTDIR)/$(package_etcdir)
+	-rm -rf --interactive $(DESTDIR)/$(package_optdir)
+
+systemd-daemon-reload:
+	systemctl daemon-reload
+
+systemd-enable: systemd-daemon-reload
+
+systemd-disable: systemd-stop
+
+systemd-start systemd-status systemd-stop systemd-enable systemd-disable:
+	-systemctl $(patsubst systemd-%,%,$@) simdb-server
+
