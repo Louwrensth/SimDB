@@ -57,6 +57,8 @@ help:
 	@echo ""
 	@echo "Compose service (make service first):"
 	@echo "  make up              Start simdb-server service using prebuilt service image"
+	@echo "  SIMDB_SERVER_IMAGE=simdb-server SIMDB_SERVER_TAG=service make up"
+	@echo "                       Start the locally built image created by make service"
 	@echo "  make down            Stop simdb-server service"
 	@echo "  make list            List the web container for this compose project"
 	@echo "  make list-all        List all containers for this compose project"
