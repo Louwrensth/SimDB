@@ -260,8 +260,11 @@ class Database:
         """
         total_count = query.count()
 
-        if sort_by:
-            query = self._apply_sort_by(query, sort_by, sort_asc)
+        # PostgreSQL does not guarantee row order without ORDER BY; see
+        # https://www.postgresql.org/docs/current/queries-order.html.
+        # Always apply_sort_by to avoid unreliable listings and
+        # artefacts like duplications in pagination, etc.
+        query = self._apply_sort_by(query, sort_by, sort_asc)
 
         if limit:
             offset = (page - 1) * limit
@@ -295,34 +298,46 @@ class Database:
 
         return total_count, results
 
-    def _apply_sort_by(self, query, sort_by: str, sort_asc: bool):
+    def _apply_sort_by(self, query, sort_by: str = "", sort_asc: bool = False):
         """
         Apply ORDER BY clause to query for given sort field.
 
         :param query: SQLAlchemy query object
-        :param sort_by: Field name to sort by
+        :param sort_by: Field name to sort by, defaults to "uuid"
         :param sort_asc: Sort in ascending order if True, descending if False
         :return: Query with ORDER BY applied
         """
         dialect = self.engine.dialect.name
 
+        # Default to uuid, the only required and unique column,
+        # so listings stay stable.
+        if not sort_by:
+            sort_by = "uuid"
+
         if sort_by == "alias":
             return query.order_by(
-                Simulation.alias if sort_asc else Simulation.alias.desc()
+                Simulation.alias if sort_asc else Simulation.alias.desc(),
+                Simulation.uuid if sort_asc else Simulation.uuid.desc(),
             )
         elif sort_by == "uuid":
             return query.order_by(
                 Simulation.uuid if sort_asc else Simulation.uuid.desc()
             )
         elif sort_by == "datetime":
+            # However unlikely, datetime is not unique; add uuid for reproducible order.
             return query.order_by(
-                Simulation.datetime if sort_asc else Simulation.datetime.desc()
+                Simulation.datetime if sort_asc else Simulation.datetime.desc(),
+                Simulation.uuid if sort_asc else Simulation.uuid.desc(),
             )
         else:
             sort_col = self._get_json_sort_column(sort_by, dialect)
             if sort_col is not None:
-                return query.order_by(sort_col if sort_asc else sort_col.desc())
-        return query
+                return query.order_by(
+                    sort_col if sort_asc else sort_col.desc(),
+                    Simulation.uuid if sort_asc else Simulation.uuid.desc(),
+                )
+        # Could not sort.
+        raise DatabaseError(f"Unknown sort column: {sort_by}")
 
     def _get_json_sort_column(self, key: str, dialect: str):
         """
