@@ -245,7 +245,6 @@ def simulation_push(
     if replaces:
         simulation.set_meta("replaces", replaces)
 
-
     if api.get_upload_options().get("auto_validate", True):
         schemas = api.get_validation_schemas()
         try:
