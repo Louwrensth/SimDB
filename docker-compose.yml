@@ -32,7 +32,6 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./docker/gunicorn.conf.py:/app/docker/gunicorn.conf.py:ro
       - ./validation:/app/validation:ro
       - ./config:/app/config:ro
       - ./tmp/partition_data:/data/simdb/partition:ro
