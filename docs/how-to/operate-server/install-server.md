@@ -126,7 +126,7 @@ selects the image and sets the Gunicorn runtime options; see
 for every variable, commented out with its default.
 
 By default the service runs the published image
-(`ghcr.io/iterorganization/simdb:latest`). To run an image built from your
+(`ghcr.io/iterorganization/simdb-server:latest`). To run an image built from your
 checkout instead, build it and point the environment file at it:
 
 ```bash
@@ -137,6 +137,26 @@ make service
 # /etc/simdb-server/simdb-server.env
 SIMDB_SERVER_IMAGE=simdb-server
 SIMDB_SERVER_TAG=service
+```
+
+Images are published to `ghcr.io/iterorganization/simdb-server` by the
+[Docker Image build and publish](https://github.com/iterorganization/SimDB/blob/develop/.github/workflows/docker_image.yml)
+workflow:
+
+| Tag | Published on |
+| --- | --- |
+| `latest` | every push to `main` |
+| `develop` | every push to `develop` |
+| `<version>` | every push to `develop`, and every tag push |
+
+`<version>` is the version reported by `simdb --version` inside that image: the
+tag name itself for a release (for example `0.15.2`), or a development version
+such as `0.15.2.dev319` for a build between releases. In production, pin it
+rather than tracking a moving tag:
+
+```bash
+# /etc/simdb-server/simdb-server.env
+SIMDB_SERVER_TAG=0.15.2
 ```
 
 The server itself is configured through the installed

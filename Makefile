@@ -9,7 +9,7 @@
 #   * Stage an installation under a prefix instead of installing under /
 #     (useful for packaging): make systemd-install DESTDIR=/tmp/simdb-staging
 #   * Run the locally built image (make service) instead of the published one
-#     (ghcr.io/iterorganization/simdb:latest):
+#     (ghcr.io/iterorganization/simdb-server:latest):
 #     make up SIMDB_SERVER_IMAGE=simdb-server SIMDB_SERVER_TAG=service
 
 SHELL := /bin/sh

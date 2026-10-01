@@ -1,26 +1,36 @@
 name: Docker Image build and publish
 
+# Triggers and action summary:
+# pull-request -> ignored in this GHA, linting and testing done elsewhere.
+# push develop -> build and push image tagged :<version> and :develop.
+# push main    -> build and push image tagged :latest.
+# push tag     -> build and push image tagged :<version>.
+
 env:
   CACHE_FROM: type=gha,scope=simdb-server
   CACHE_TO: type=gha,mode=max,scope=simdb-server
   SETUPTOOLS_SCM_OVERRIDES_FOR_IMAS_SIMDB: '{local_scheme = "no-local-version-strict"}'
 
 on:
-  # Triggers on pushes to develop, on pushed tags, and on pull requests targeting develop.
   push:
-    branches: [ "develop" ]
+    branches: [ "develop", "main" ]
     tags: [ "*" ]
-  pull_request:
-    branches: [ "develop" ]
+
+# Serialize runs per ref, so that two merges in quick succession can't race to
+# move the "develop" image tag backward. The running job is never cancelled;
+# GitHub does however keep only the newest *pending* run per group, so a third
+# queued run supersedes the second.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build, verify, and package
+  build-and-publish:
+    name: Build and publish
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.value }}
     permissions:
       contents: read
+      packages: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v7
@@ -28,9 +38,19 @@ jobs:
         fetch-tags: true
         fetch-depth: 0
 
-    - name: Get package version
+    - name: Get version
       id: version
-      run: echo "value=$(git describe --tags --long --always | sed -r 's/-([0-9]+)/.dev\1/;s/-/+/')" >> "$GITHUB_OUTPUT"
+      run: |
+        # A commit between tags describes as "<tag>-<n>-g<sha>", turned into the
+        # PEP 440 version "<tag>.dev<n>+g<sha>"; a commit on a tag describes as
+        # just "<tag>" and is used as is.
+        VERSION=$(git describe --tags --always | sed -r 's/-([0-9]+)-g([0-9a-f]+)$/.dev\1+g\2/')
+        # A Docker tag allows only [A-Za-z0-9_.-], so drop the '+' local segment
+        # for the image tag. That is the version setuptools-scm bakes into the
+        # image (local_scheme = no-local-version-strict), so the tag and
+        # "simdb --version" agree.
+        echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "tag_value=${VERSION%%+*}" >> "$GITHUB_OUTPUT"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
@@ -45,16 +65,6 @@ jobs:
         cache-from: ${{ env.CACHE_FROM }}
         cache-to: ${{ env.CACHE_TO }}
 
-    - name: Build validation image
-      uses: docker/build-push-action@v7
-      with:
-        target: test
-        load: true
-        tags: simdb-server:test
-        build-args: APP_VERSION=${{ steps.version.outputs.value }}
-        cache-from: ${{ env.CACHE_FROM }}
-        cache-to: ${{ env.CACHE_TO }}
-
     - name: Build service image
       uses: docker/build-push-action@v7
       with:
@@ -65,61 +75,9 @@ jobs:
         cache-from: ${{ env.CACHE_FROM }}
         cache-to: ${{ env.CACHE_TO }}
 
-    - name: Export service image tar
-      run: docker save -o "${{ runner.temp }}/simdb-server-service.tar" simdb-server:service
-
-    - name: Upload service image artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: simdb-server-service
-        path: ${{ runner.temp }}/simdb-server-service.tar
-        retention-days: 7
-
-  verify:
-    name: Verify Docker validation stage
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      contents: read
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v7
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v4
-
-    - name: Build validation stage only
-      uses: docker/build-push-action@v7
-      with:
-        target: test
-        load: true
-        tags: simdb-server:test
-        build-args: APP_VERSION=0.0.0
-        cache-from: ${{ env.CACHE_FROM }}
-        cache-to: ${{ env.CACHE_TO }}
-
-  publish:
-    name: Publish service image
-    # Runs only for push events (branch/tag pushes), and is skipped for pull_request events.
-    if: ${{ github.event_name == 'push' }}
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      contents: write
-      packages: write
-    steps:
     - name: Lowercase repo-owner
       id: repo_owner
       run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
-
-    - name: Download service image artifact
-      uses: actions/download-artifact@v8
-      with:
-        name: simdb-server-service
-        path: ${{ runner.temp }}
-
-    - name: Load service image
-      run: docker load -i "${{ runner.temp }}/simdb-server.tar"
 
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v4
@@ -128,21 +86,30 @@ jobs:
         username: ${{ steps.repo_owner.outputs.value }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Tag and push service image with versioned tag and "nightly"
-      if: ${{ github.ref_type == 'branch' }}
+    # Versioned tag: develop pushes and any tag push. main is excluded -- it
+    # follows develop and only publishes :latest.
+    - name: Tag and push service image with version tag
+      if: ${{ github.ref_type == 'tag' || github.ref_name == 'develop' }}
       run: |
-        docker tag simdb-server:service ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:${{ needs.build.outputs.version }}
-        docker tag simdb-server:service ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:nightly
-        docker push ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:${{ needs.build.outputs.version }}
-        docker push ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:nightly
+        docker tag \
+          simdb-server:service \
+          ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:${{ steps.version.outputs.tag_value }}
+        docker push ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:${{ steps.version.outputs.tag_value }}
 
+    # Run on develop pushes only
+    - name: Tag image :develop and publish
+      if: ${{ github.ref_type == 'branch' && github.ref_name == 'develop' }}
+      run: |
+        docker tag \
+          simdb-server:service \
+          ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:develop
+        docker push ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:develop
 
-    # These steps run on tagged commits only
-    - name: Tag and push latest
-      if: ${{ github.ref_type == 'tag' }}
+    # Run on main pushes only
+    - name: Tag image :latest and publish
+      if: ${{ github.ref_type == 'branch' && github.ref_name == 'main' }}
       run: |
         docker tag \
           simdb-server:service \
           ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:latest
         docker push ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:latest
-

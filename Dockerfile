@@ -31,37 +31,6 @@ RUN uv sync --locked --no-dev --extra all
 
 ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
 
-# Validation stage: run linting and tests using the project dev environment.
-FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
-    AS test
-
-ENV UV_LINK_MODE=copy \
-    UV_COMPILE_BYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-WORKDIR /app
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    libldap2-dev \
-    libsasl2-dev \
-    libmagic1 \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY uv.lock pyproject.toml ./
-COPY alembic.ini ./
-COPY docker/gunicorn.conf.py ./docker/gunicorn.conf.py
-COPY src/ ./src/
-COPY tests/ ./tests/
-
-RUN uv sync --locked --group dev --extra all
-
-RUN uv run python -m ruff format --check
-RUN uv run python -m ruff check
-RUN uv run python -m ty check src
-RUN uv run python -m pytest --cov=simdb --cov-report=term-missing --cov-report=xml:coverage.xml --cov-report=html:htmlcov -v --tb=short
-
 # Runtime stage: Minimal image with only runtime dependencies
 FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
     AS service
