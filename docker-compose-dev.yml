@@ -7,7 +7,7 @@ services:
         SIMDB_GIT_BRANCH: ${SIMDB_GIT_BRANCH:-unknown}
         SIMDB_GIT_COMMIT: ${SIMDB_GIT_COMMIT:-unknown}
         SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
-    image: simdb-dev:${SIMDB_IMAGE_TAG:-local}
+    image: simdb-dev:${SIMDB_TAG:-local}
     volumes:
       - ./config:/app/config:ro
     environment:
@@ -30,7 +30,7 @@ services:
         SIMDB_GIT_BRANCH: ${SIMDB_GIT_BRANCH:-unknown}
         SIMDB_GIT_COMMIT: ${SIMDB_GIT_COMMIT:-unknown}
         SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
-    image: simdb-dev:${SIMDB_IMAGE_TAG:-local}
+    image: simdb-dev:${SIMDB_TAG:-local}
     environment:
       IMAS_LOCAL_HOSTS: localhost
       SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
@@ -107,7 +107,7 @@ services:
         SIMDB_GIT_BRANCH: ${SIMDB_GIT_BRANCH:-unknown}
         SIMDB_GIT_COMMIT: ${SIMDB_GIT_COMMIT:-unknown}
         SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
-    image: simdb-dev:${SIMDB_IMAGE_TAG:-local}
+    image: simdb-dev:${SIMDB_TAG:-local}
     command: uv run simdb_worker
     environment:
       SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
@@ -137,7 +137,7 @@ services:
         SIMDB_GIT_BRANCH: ${SIMDB_GIT_BRANCH:-unknown}
         SIMDB_GIT_COMMIT: ${SIMDB_GIT_COMMIT:-unknown}
         SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
-    image: simdb-dev:${SIMDB_IMAGE_TAG:-local}
+    image: simdb-dev:${SIMDB_TAG:-local}
     command: uv run simdb_beat
     environment:
       SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
