@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       args:
+        APP_VERSION: ${APP_VERSION:-0.0.0}
         SIMDB_GIT_BRANCH: ${SIMDB_GIT_BRANCH:-unknown}
         SIMDB_GIT_COMMIT: ${SIMDB_GIT_COMMIT:-unknown}
         SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
@@ -27,6 +28,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       args:
+        APP_VERSION: ${APP_VERSION:-0.0.0}
         SIMDB_GIT_BRANCH: ${SIMDB_GIT_BRANCH:-unknown}
         SIMDB_GIT_COMMIT: ${SIMDB_GIT_COMMIT:-unknown}
         SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
@@ -104,6 +106,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       args:
+        APP_VERSION: ${APP_VERSION:-0.0.0}
         SIMDB_GIT_BRANCH: ${SIMDB_GIT_BRANCH:-unknown}
         SIMDB_GIT_COMMIT: ${SIMDB_GIT_COMMIT:-unknown}
         SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
@@ -134,6 +137,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       args:
+        APP_VERSION: ${APP_VERSION:-0.0.0}
         SIMDB_GIT_BRANCH: ${SIMDB_GIT_BRANCH:-unknown}
         SIMDB_GIT_COMMIT: ${SIMDB_GIT_COMMIT:-unknown}
         SIMDB_DEPLOYMENT: ${SIMDB_DEPLOYMENT:-local}
