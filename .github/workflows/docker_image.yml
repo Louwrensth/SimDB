@@ -41,16 +41,9 @@ jobs:
     - name: Get version
       id: version
       run: |
-        # A commit between tags describes as "<tag>-<n>-g<sha>", turned into the
-        # PEP 440 version "<tag>.dev<n>+g<sha>"; a commit on a tag describes as
-        # just "<tag>" and is used as is.
-        VERSION=$(git describe --tags --always | sed -r 's/-([0-9]+)-g([0-9a-f]+)$/.dev\1+g\2/')
-        # A Docker tag allows only [A-Za-z0-9_.-], so drop the '+' local segment
-        # for the image tag. That is the version setuptools-scm bakes into the
-        # image (local_scheme = no-local-version-strict), so the tag and
-        # "simdb --version" agree.
-        echo "value=$VERSION" >> "$GITHUB_OUTPUT"
-        echo "tag_value=${VERSION%%+*}" >> "$GITHUB_OUTPUT"
+        # The same version derivation script is run by ./Makefile:
+        echo "pep440=$(sh docker/version.sh pep440)" >> "$GITHUB_OUTPUT"
+        echo "dockertag=$(sh docker/version.sh dockertag)" >> "$GITHUB_OUTPUT"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
@@ -61,7 +54,7 @@ jobs:
         target: build
         load: true
         tags: simdb-server:build
-        build-args: APP_VERSION=${{ steps.version.outputs.value }}
+        build-args: APP_VERSION=${{ steps.version.outputs.pep440 }}
         cache-from: ${{ env.CACHE_FROM }}
         cache-to: ${{ env.CACHE_TO }}
 
@@ -71,7 +64,7 @@ jobs:
         target: service
         load: true
         tags: simdb-server:service
-        build-args: APP_VERSION=${{ steps.version.outputs.value }}
+        build-args: APP_VERSION=${{ steps.version.outputs.pep440 }}
         cache-from: ${{ env.CACHE_FROM }}
         cache-to: ${{ env.CACHE_TO }}
 
@@ -93,8 +86,8 @@ jobs:
       run: |
         docker tag \
           simdb-server:service \
-          ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:${{ steps.version.outputs.tag_value }}
-        docker push ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:${{ steps.version.outputs.tag_value }}
+          ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:${{ steps.version.outputs.dockertag }}
+        docker push ghcr.io/${{ steps.repo_owner.outputs.value }}/simdb-server:${{ steps.version.outputs.dockertag }}
 
     # Run on develop pushes only
     - name: Tag image :develop and publish

@@ -135,8 +135,8 @@ make service
 
 ```bash
 # /etc/simdb-server/simdb-server.env
-SIMDB_SERVER_IMAGE=simdb-server
-SIMDB_SERVER_TAG=service
+SIMDB_IMAGE=simdb-server
+SIMDB_TAG=service
 ```
 
 Images are published to `ghcr.io/iterorganization/simdb-server` by the
@@ -156,7 +156,7 @@ rather than tracking a moving tag:
 
 ```bash
 # /etc/simdb-server/simdb-server.env
-SIMDB_SERVER_TAG=0.15.2
+SIMDB_TAG=0.15.2
 ```
 
 The server itself is configured through the installed

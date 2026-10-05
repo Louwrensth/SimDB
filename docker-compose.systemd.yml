@@ -2,7 +2,7 @@
 #
 # Uses the GHCR-published image instead of a local build.
 #
-# Set SIMDB_SERVER_TAG in the environment file to pin a specific
+# Set SIMDB_TAG in the environment file to pin a specific
 # version. The default is the latest tag at the time of writing.
 #
 # Enable this override by including it in COMPOSE_FILE,
@@ -10,14 +10,22 @@
 #   COMPOSE_FILE="docker-compose.yml:docker-compose.systemd.yml"
 #
 services:
+  # Systemd deployment should only manage a **single** container instance, to
+  # enforce this, use a dedicated container_name that docker requires to be unique.
+  migrations:
+    container_name: simdb-systemd-migrations
+  worker:
+    container_name: simdb-systemd-worker
+  beat:
+    container_name: simdb-systemd-beat
+  postgres:
+    container_name: simdb-systemd-postgres
+  redis:
+    container_name: simdb-systemd-redis
   web:
-    # Systemd deployment should only manage a single container instance, docker requires
-    # container_name to be unique, so use it to ensure a fixed name.
-    container_name: ${SYSTEMD_CONTAINER_SIMDB:-simdb-server-systemd}
-    image: ${SIMDB_SERVER_IMAGE:-ghcr.io/iterorganization/simdb-server}:${SIMDB_SERVER_TAG:-latest}
+    container_name: simdb-systemd-web
+    image: ${SIMDB_IMAGE:-ghcr.io/iterorganization/simdb-server}:${SIMDB_TAG:-latest}
     logging:
       driver: journald
       options:
-        tag: simdb-server-systemd
-  postgres:
-    container_name: ${SYSTEMD_CONTAINER_POSTGRES:-simdb-postgres-systemd}
+        tag: simdb-systemd-web

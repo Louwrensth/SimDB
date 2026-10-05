@@ -18,9 +18,8 @@ WorkingDirectory=/opt/simdb-server
 
 # --- defaults (overridden by env file when set) -----------------------
 Environment="COMPOSE_FILE=docker-compose.yml:docker-compose.systemd.yml"
-#Environment="SYSTEMD_CONTAINER_SIMDB=simdb-server-systemd"
-#Environment="SIMDB_SERVER_TAG=latest"
-#Environment="SIMDB_SERVER_IMAGE=ghcr.io/iterorganization/simdb-server"
+#Environment="SIMDB_TAG=latest"
+#Environment="SIMDB_IMAGE=ghcr.io/iterorganization/simdb-server"
 #Environment="GUNICORN_BIND=0.0.0.0:5000"
 #Environment="GUNICORN_WORKERS=3"
 #Environment="GUNICORN_WORKER_CLASS=gthread"
