@@ -76,6 +76,26 @@ match the published port.
 See the [server configuration reference](../../reference/server-configuration.md)
 for all options.
 
+### Writable bind mounts
+
+The runtime image drops privileges and runs as the `simdb` user. By default
+that user is created with UID/GID `1000:1000` in the image. If you bind-mount a
+host directory onto `upload_folder` (the Compose setup does this with
+`./upload_folder:/data/simdb/simulations`), Docker uses the host directory's
+existing ownership and mode bits. The container cannot fix that from inside the
+mount.
+
+In practice, the host directory must be writable by the same numeric UID/GID as
+the container process before the container starts. For example:
+
+```bash
+sudo install -d -m 0775 -o 1000 -g 1000 ./upload_folder
+```
+
+Avoid world-writable workarounds such as `chmod a+rwX`. If you build your own
+image with different `APP_UID`/`APP_GID` values, apply the same numeric
+ownership to the host path.
+
 ### Gunicorn runtime
 
 The `web` service runs Gunicorn with three `gthread` workers, four threads per
