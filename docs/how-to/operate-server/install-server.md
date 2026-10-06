@@ -165,6 +165,16 @@ The server itself is configured through the installed
 the Compose project name can be overridden on the command line, for example
 `sudo make systemd-install package_optdir=/srv/simdb`.
 
+`systemd-install` also creates `/opt/simdb-server/upload_folder` with ownership
+set to the container runtime UID/GID (`1000:1000` by default), because the web
+container runs as a non-root user and writes uploads through a bind mount. If
+you build a custom image with different `APP_UID`/`APP_GID` values, pass the
+same values to the install step so the host directory ownership matches:
+
+```bash
+sudo make systemd-install APP_UID=1234 APP_GID=1234
+```
+
 ```{tip}
 To stage an installation without touching `/` — for packaging, or to inspect
 what would be written — pass a prefix: `make systemd-install
