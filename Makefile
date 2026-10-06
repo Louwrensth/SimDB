@@ -18,6 +18,8 @@ SHELL := /bin/sh
 # The same script is run by CI (.github/workflows/docker_image.yml):
 APP_VERSION := $(shell sh docker/version.sh pep440)
 SETUPTOOLS_SCM_OVERRIDES_FOR_IMAS_SIMDB := '{local_scheme = "no-local-version-strict"}'
+APP_UID ?= 1000
+APP_GID ?= 1000
 
 SIMDB_PROJECT_NAME ?= simdb-server
 COMPOSE_PROJECT_NAME ?= $(SIMDB_PROJECT_NAME)
@@ -35,7 +37,10 @@ COMPOSE_FILE ?= docker-compose.yml:docker-compose.systemd.yml
 export APP_VERSION SIMDB_IMAGE SIMDB_TAG COMPOSE_FILE COMPOSE_PROJECT_NAME
 
 DOCKER_CMD ?= docker
-DOCKER_BUILD ?= $(DOCKER_CMD) build --build-arg APP_VERSION="$(APP_VERSION)"
+DOCKER_BUILD ?= $(DOCKER_CMD) build \
+	--build-arg APP_VERSION="$(APP_VERSION)" \
+	--build-arg APP_UID="$(APP_UID)" \
+	--build-arg APP_GID="$(APP_GID)"
 DOCKER_COMPOSE ?= $(DOCKER_CMD) compose
 
 DOCKER_BUILD_TAG := $(SIMDB_IMAGE):$(SIMDB_TAG)
@@ -125,10 +130,11 @@ systemd-installdirs:
 	mkdir -p \
 		$(DESTDIR)$(package_optdir)/config \
 		$(DESTDIR)$(package_optdir)/validation \
-		$(DESTDIR)$(package_optdir)/upload_folder \
 		$(DESTDIR)$(package_optdir)/tmp/partition_data \
 		$(DESTDIR)$(package_etcdir) \
 		$(DESTDIR)$(systemd_unitdir)
+	install -d -m 0775 -o $(APP_UID) -g $(APP_GID) \
+		$(DESTDIR)$(package_optdir)/upload_folder
 
 systemd-install: systemd-installdirs
 	install -m 644 \
