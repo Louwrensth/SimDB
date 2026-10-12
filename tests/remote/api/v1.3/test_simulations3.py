@@ -170,6 +170,16 @@ def test_post_simulations_v13(client_with_task_mock, tmp_path):
     )
 
 
+def test_post_simulations_requires_responsible_name_or_user_v13(client):
+    """An unauthenticated POST with no uploaded_by is rejected (parity with v1.2)."""
+    simulation_data = generate_simulation_data(alias="no-responsible-name-v13")
+
+    rv = post_simulation_v13(client, simulation_data, headers={})
+
+    assert rv.status_code == 400
+    assert "uploaded_by user" in rv.json["error"]
+
+
 @pytest.mark.xfail(
     reason="User.email is not set for admin without custom authenticators"
 )

@@ -252,6 +252,16 @@ def test_post_simulations_uploaded_by(client):
     assert result.metadata.as_dict()["uploaded_by"] == "test-user"
 
 
+def test_post_simulations_requires_responsible_name_or_user(client):
+    """An unauthenticated POST with no uploaded_by is rejected, not stored."""
+    simulation_data = generate_simulation_data(alias="no-responsible-name")
+
+    rv = post_simulation(client, simulation_data, headers={})
+
+    assert rv.status_code == 400
+    assert "uploaded_by user" in rv.json["error"]
+
+
 def test_get_simulations_basic(client):
     """Test basic GET request to /v1.2/simulations endpoint."""
     rv = client.get("/v1.2/simulations", headers=HEADERS)

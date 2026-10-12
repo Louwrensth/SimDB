@@ -59,6 +59,25 @@ from simdb.validation.file import find_file_validator
 api = Namespace("simulations", path="/")
 
 
+def resolve_uploaded_by(uploaded_by: Optional[str], user: User) -> str:
+    """Return the user to record as the uploader of a pushed simulation.
+
+    ``"anonymous"`` is the sentinel returned by the no-op authenticator for an
+    unauthenticated request and should not be stored as a real uploader. If
+    neither the request nor the authenticated user identifies anyone, a client
+    error is returned so the CLI reports a clear message instead of silently
+    cataloguing the simulation as ``anonymous``.
+    """
+    resolved = uploaded_by or user.email or user.name
+    if not resolved or resolved == "anonymous":
+        raise ResponseException(
+            "Cannot determine the uploaded_by user: the request is not "
+            "authenticated and the simulation does not set 'responsible_name'. "
+            "Authenticate, or set 'responsible_name' in the manifest.",
+        )
+    return resolved
+
+
 def _update_simulation_status(
     simulation: models_sim.Simulation, status: models_sim.Simulation.Status, user
 ) -> None:
@@ -255,7 +274,7 @@ class SimulationList(Resource):
         # Simulation Upload (Push) Date
         simulation.datetime = datetime.datetime.now()
 
-        uploaded_by = body.uploaded_by or user.email or user.name or "anonymous"
+        uploaded_by = resolve_uploaded_by(body.uploaded_by, user)
 
         simulation.set_meta("uploaded_by", uploaded_by)
 
