@@ -1,3 +1,5 @@
+from getpass import getuser
+from pathlib import Path
 from unittest import mock
 from uuid import uuid1
 
@@ -310,3 +312,53 @@ def test_simulation_push_local_rejected_status_check(get_local_db, remote_api, s
     assert result.exit_code != 0
     assert "Failed to check ingestion status: Simulation not found" in result.output
     assert remote_api.return_value.get_ingestion_status.call_count == 1
+
+
+@mock.patch("simdb.cli.commands.simulation.get_local_db")
+def test_simulation_ingest_defaults_responsible_name(get_local_db):
+    """Ingest without responsible_name defaults it to $USER and warns loudly."""
+    config_file = config_test_file()
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        Path("manifest.yaml").write_text(
+            "manifest_version: 2\n"
+            "alias: ingest-no-responsible-name\n"
+            "inputs: []\n"
+            "outputs: []\n"
+        )
+        result = runner.invoke(
+            cli,
+            [f"--config-file={config_file}", "simulation", "ingest", "manifest.yaml"],
+        )
+
+    assert result.exit_code == 0
+    assert "responsible_name" in result.output
+    assert "WARNING" in result.output
+
+    simulation = get_local_db.return_value.insert_simulation.call_args[0][0]
+    assert simulation.meta_dict()["uploaded_by"] == getuser()
+
+
+@mock.patch("simdb.cli.commands.simulation.get_local_db")
+def test_simulation_ingest_keeps_responsible_name(get_local_db):
+    """Ingest with responsible_name set keeps it and does not warn."""
+    config_file = config_test_file()
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        Path("manifest.yaml").write_text(
+            "manifest_version: 2\n"
+            "alias: ingest-with-responsible-name\n"
+            "responsible_name: alice\n"
+            "inputs: []\n"
+            "outputs: []\n"
+        )
+        result = runner.invoke(
+            cli,
+            [f"--config-file={config_file}", "simulation", "ingest", "manifest.yaml"],
+        )
+
+    assert result.exit_code == 0
+    assert "WARNING" not in result.output
+
+    simulation = get_local_db.return_value.insert_simulation.call_args[0][0]
+    assert simulation.meta_dict()["uploaded_by"] == "alice"

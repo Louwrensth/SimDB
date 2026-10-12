@@ -2,6 +2,7 @@ import contextlib
 import sys
 import time
 import urllib.parse
+from getpass import getuser
 from itertools import chain
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
@@ -184,6 +185,19 @@ def simulation_ingest(config: Config, manifest_file: str, alias: str):
         overrides["alias"] = alias
 
     manifest = Manifest.load_from_file(Path(manifest_file), overrides=overrides)
+
+    if not manifest.responsible_name:
+        user = getuser()
+        manifest.responsible_name = user
+        click.secho(
+            "WARNING: the manifest does not set 'responsible_name'. "
+            f"Defaulting to the current user '{user}'; the simulation will be "
+            f"recorded as uploaded by '{user}' on the server. Set "
+            "'responsible_name' in the manifest to change this.",
+            fg="yellow",
+            bold=True,
+            err=True,
+        )
 
     simulation = Simulation(manifest, config)
     if alias:

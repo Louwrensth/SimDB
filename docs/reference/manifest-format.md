@@ -44,7 +44,7 @@ validation error.
 | `outputs` | Yes | List of output data objects. May be empty. |
 | `alias` | No | Human-readable name for the simulation (see [Alias](#alias)). |
 | `metadata` | No | List of metadata name/value pairs (see [Metadata](#metadata)). |
-| `responsible_name` | No | Name of the person responsible for the simulation. |
+| `responsible_name` | No | Name of the person responsible for the simulation. If omitted, `simdb simulation ingest` warns and defaults to the current user. |
 
 ```{note}
 Earlier manifest versions (0 and 1) used `path`/`imas`/`uuid` keys and a
