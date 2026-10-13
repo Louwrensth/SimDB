@@ -143,7 +143,11 @@ systemd-install: systemd-installdirs
 		$(DESTDIR)$(package_optdir)
 	install -m 644 \
 		config/simdb.cfg \
-		$(DESTDIR)$(package_optdir)/config
+		$(DESTDIR)$(package_optdir)/config/simdb.cfg.example
+	@if [ ! -f "$(DESTDIR)$(package_optdir)/config/simdb.cfg" ]; then \
+		install -m 644 config/simdb.cfg \
+			"$(DESTDIR)$(package_optdir)/config/simdb.cfg"; \
+	fi
 	install -m 644 \
 		validation/iter_scenarios_validation.yaml \
 		$(DESTDIR)$(package_optdir)/validation
