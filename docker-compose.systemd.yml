@@ -24,7 +24,6 @@ services:
     container_name: simdb-systemd-redis
   web:
     container_name: simdb-systemd-web
-    image: ${SIMDB_IMAGE:-ghcr.io/iterorganization/simdb-server}:${SIMDB_TAG:-latest}
     logging:
       driver: journald
       options:
