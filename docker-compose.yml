@@ -35,7 +35,7 @@ services:
       - ./validation:/app/validation:ro
       - ./config:/app/config:ro
       - ./tmp/partition_data:/data/simdb/partition:ro
-      - ./upload_folder:/data/simdb/simulations
+      - ${SIMDB_UPLOAD_DIR:-/upload_folder}:/data/simdb/simulations
     depends_on:
       redis:
         condition: service_healthy
@@ -57,7 +57,7 @@ services:
     volumes:
       - ./config:/app/config:ro
       - ./tmp/partition_data:/data/simdb/partition:ro
-      - ./upload_folder:/data/simdb/simulations
+      - ${SIMDB_UPLOAD_DIR:-/upload_folder}:/data/simdb/simulations
     depends_on:
       redis:
         condition: service_healthy
