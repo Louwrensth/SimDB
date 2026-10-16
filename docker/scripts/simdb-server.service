@@ -20,6 +20,7 @@ WorkingDirectory=/opt/simdb-server
 Environment="COMPOSE_FILE=docker-compose.yml:docker-compose.systemd.yml"
 #Environment="SIMDB_TAG=latest"
 #Environment="SIMDB_IMAGE=ghcr.io/iterorganization/simdb-server"
+#Environment="SIMDB_UPLOAD_DIR=./upload_folder"
 #Environment="GUNICORN_BIND=0.0.0.0:5000"
 #Environment="GUNICORN_WORKERS=3"
 #Environment="GUNICORN_WORKER_CLASS=gthread"
