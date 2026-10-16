@@ -32,6 +32,7 @@ Environment="COMPOSE_FILE=docker-compose.yml:docker-compose.systemd.yml"
 ExecStartPre=-/usr/bin/docker compose --profile with_workers pull --ignore-pull-failures
 ExecStart=/usr/bin/docker compose --profile with_workers up --detach --remove-orphans --no-build
 ExecStop=/usr/bin/docker compose --profile with_workers down
+ExecStopPost=-/usr/bin/docker compose --profile with_workers down
 
 # --- restart behaviour ------------------------------------------------
 Restart=on-failure
