@@ -8,6 +8,8 @@ services:
     volumes:
       - ./config:/app/config:ro
     environment:
+      APP_UID: ${APP_UID:-1000}
+      APP_GID: ${APP_GID:-1000}
       DATABASE_URL: postgresql+psycopg2://simdb:simdb@postgres:5432/simdb
     depends_on:
       postgres:
@@ -22,6 +24,8 @@ services:
         APP_VERSION: ${APP_VERSION:-0.0.0}
     image: ${SIMDB_IMAGE:-simdb-server}:${SIMDB_TAG:-local}
     environment:
+      APP_UID: ${APP_UID:-1000}
+      APP_GID: ${APP_GID:-1000}
       IMAS_LOCAL_HOSTS: localhost
       GUNICORN_BIND: ${GUNICORN_BIND:-0.0.0.0:5000}
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
@@ -53,6 +57,9 @@ services:
       args:
         APP_VERSION: ${APP_VERSION:-0.0.0}
     image: ${SIMDB_IMAGE:-simdb-server}:${SIMDB_TAG:-local}
+    environment:
+      APP_UID: ${APP_UID:-1000}
+      APP_GID: ${APP_GID:-1000}
     command: uv run simdb_worker
     volumes:
       - ./config:/app/config:ro
@@ -75,6 +82,9 @@ services:
       args:
         APP_VERSION: ${APP_VERSION:-0.0.0}
     image: ${SIMDB_IMAGE:-simdb-server}:${SIMDB_TAG:-local}
+    environment:
+      APP_UID: ${APP_UID:-1000}
+      APP_GID: ${APP_GID:-1000}
     command: uv run simdb_beat
     volumes:
       - ./config:/app/config:ro
