@@ -8,6 +8,8 @@ services:
     volumes:
       - ./config:/app/config:ro
     environment:
+      APP_UID: ${APP_UID:-1000}
+      APP_GID: ${APP_GID:-1000}
       DATABASE_URL: postgresql+psycopg2://simdb:simdb@postgres:5432/simdb
     depends_on:
       postgres:
@@ -22,6 +24,10 @@ services:
         APP_VERSION: ${APP_VERSION:-0.0.0}
     image: ${SIMDB_IMAGE:-simdb-server}:${SIMDB_TAG:-local}
     environment:
+      APP_UID: ${APP_UID:-1000}
+      APP_GID: ${APP_GID:-1000}
+      # Set APP_DATA_DIR if it is required, to check it is writable
+      APP_DATA_DIR: /data/simdb/simulations
       IMAS_LOCAL_HOSTS: localhost
       GUNICORN_BIND: ${GUNICORN_BIND:-0.0.0.0:5000}
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
@@ -35,7 +41,7 @@ services:
       - ./validation:/app/validation:ro
       - ./config:/app/config:ro
       - ./tmp/partition_data:/data/simdb/partition:ro
-      - ${SIMDB_UPLOAD_DIR:-/upload_folder}:/data/simdb/simulations
+      - ${SIMDB_UPLOAD_DIR:-./upload_folder}:/data/simdb/simulations
     depends_on:
       redis:
         condition: service_healthy
@@ -53,11 +59,16 @@ services:
       args:
         APP_VERSION: ${APP_VERSION:-0.0.0}
     image: ${SIMDB_IMAGE:-simdb-server}:${SIMDB_TAG:-local}
+    environment:
+      APP_UID: ${APP_UID:-1000}
+      APP_GID: ${APP_GID:-1000}
+      # Set APP_DATA_DIR if it is required, to check it is writable
+      APP_DATA_DIR: /data/simdb/simulations
     command: uv run simdb_worker
     volumes:
       - ./config:/app/config:ro
       - ./tmp/partition_data:/data/simdb/partition:ro
-      - ${SIMDB_UPLOAD_DIR:-/upload_folder}:/data/simdb/simulations
+      - ${SIMDB_UPLOAD_DIR:-./upload_folder}:/data/simdb/simulations
     depends_on:
       redis:
         condition: service_healthy
@@ -75,7 +86,11 @@ services:
       args:
         APP_VERSION: ${APP_VERSION:-0.0.0}
     image: ${SIMDB_IMAGE:-simdb-server}:${SIMDB_TAG:-local}
-    command: uv run simdb_beat
+    environment:
+      APP_UID: ${APP_UID:-1000}
+      APP_GID: ${APP_GID:-1000}
+    # The non-privileged user needs write permission to the schedule-file
+    command: uv run simdb_beat --schedule-file=/tmp/celerybeat-schedule
     volumes:
       - ./config:/app/config:ro
     depends_on:
