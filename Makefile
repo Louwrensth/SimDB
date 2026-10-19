@@ -90,7 +90,7 @@ help:
 	@echo "  sudo make systemd-status        systemctl status $(SIMDB_PROJECT_NAME)"
 	@echo "  sudo make systemd-stop          systemctl stop $(SIMDB_PROJECT_NAME)"
 	@echo "  sudo make systemd-disable       systemctl stop && systemctl disable $(SIMDB_PROJECT_NAME)"
-	@echo "  sudo make systemd-uninstall     Remove everything systemd-install created"
+	@echo "  sudo make systemd-uninstall     Print manual cleanup instructions"
 
 service:
 	$(DOCKER_BUILD) --target service -t $(DOCKER_BUILD_TAG) .
@@ -144,7 +144,7 @@ systemd-install: systemd-installdirs
 		$(DESTDIR)$(package_optdir)/config/simdb.cfg.example
 	@if [ ! -f "$(DESTDIR)$(package_optdir)/config/simdb.cfg" ]; then \
 		install -m 644 config/simdb.cfg \
-			"$(DESTDIR)$(package_optdir)/config/simdb.cfg"; \
+			$(DESTDIR)$(package_optdir)/config/simdb.cfg; \
 	fi
 	install -m 644 \
 		validation/iter_scenarios_validation.yaml \
@@ -154,18 +154,21 @@ systemd-install: systemd-installdirs
 		$(DESTDIR)$(systemd_unitdir)/$(SIMDB_PROJECT_NAME).service
 	install -m 644 \
 		docker/scripts/simdb-server.env.example \
-		"$(DESTDIR)$(package_etcdir)/$(SIMDB_PROJECT_NAME).env.example"
+		$(DESTDIR)$(package_etcdir)/$(SIMDB_PROJECT_NAME).env.example
 	@if [ ! -f "$(DESTDIR)$(package_etcdir)/$(SIMDB_PROJECT_NAME).env" ]; then \
 		install -m 644 docker/scripts/simdb-server.env.example \
-			"$(DESTDIR)$(package_etcdir)/$(SIMDB_PROJECT_NAME).env"; \
+			$(DESTDIR)$(package_etcdir)/$(SIMDB_PROJECT_NAME).env; \
 	fi
 
 systemd-uninstall: systemd-disable
-	@printf 'Remove $(DESTDIR)$(package_optdir) and $(DESTDIR)$(package_etcdir)? [y/N] '; \
-		read ans; case "$$ans" in [yY]*) ;; *) echo "aborted"; exit 1;; esac
-	-rm -f "$(DESTDIR)$(systemd_unitdir)/$(SIMDB_PROJECT_NAME).service"
-	-rm -rf "$(DESTDIR)$(package_etcdir)"
-	-rm -rf "$(DESTDIR)$(package_optdir)"
+	@echo "Manual cleanup required. Review and remove these paths if appropriate:"
+	@echo "  $(DESTDIR)$(systemd_unitdir)/$(SIMDB_PROJECT_NAME).service"
+	@echo "  $(DESTDIR)$(package_etcdir)"
+	@echo "  $(DESTDIR)$(package_optdir)"
+	@echo "Suggested steps:"
+	@echo "  1. Verify the service is stopped and disabled."
+	@echo "  2. Remove the systemd unit file, then run: systemctl daemon-reload"
+	@echo "  3. Remove the config and application directories if they are no longer needed"
 
 systemd-daemon-reload:
 	systemctl daemon-reload
