@@ -7,10 +7,8 @@ import click
 from simdb import __version__
 from simdb.config import Config
 
-from .commands.alias import alias
 from .commands.config import config
 from .commands.manifest import manifest
-from .commands.provenance import provenance
 from .commands.remote import remote
 from .commands.simulation import simulation
 
@@ -69,11 +67,9 @@ def dump_help():
 
 def add_commands():
     cli.add_command(manifest)
-    cli.add_command(alias)
     cli.add_command(simulation, aliases=["sim"], name="simulation")
     cli.add_command(config)
     cli.add_command(remote)
-    cli.add_command(provenance)
 
 
 add_commands()
