@@ -98,8 +98,11 @@ Day-to-day control:
 sudo make systemd-status
 sudo make systemd-stop
 sudo make systemd-disable   # stop and disable at boot
-sudo make systemd-uninstall # stop and remove installed files
+sudo make systemd-uninstall # stop/disable and print manual cleanup instructions
 ```
+
+`systemd-uninstall` does not delete files. It stops and disables the service,
+then prints the installed paths for you to review and remove manually.
 
 `make help` prints the same list, and the Compose targets
 (`up`, `down`, `logs-f`, `shell`, …) are available for running the stack without
@@ -110,28 +113,48 @@ installing a service. See
 
 | Path | Contents |
 | --- | --- |
-| `/opt/simdb-server` | Compose files, `config/simdb.cfg`, and validation data |
-| `/etc/simdb-server/simdb-server.env` | Environment file read by the unit (`docker/scripts/simdb-server.env.example` on first install) |
+| `/opt/simdb-server` | Compose files and validation data |
+| `/opt/simdb-server/config/simdb.cfg` | The server's own settings: database, authentication, validation, caching |
+| `/etc/simdb-server/simdb-server.env` | Which image and version runs, and how the container is launched: `APP_UID`/`APP_GID`, `SIMDB_UPLOAD_DIR`, Gunicorn (`docker/scripts/simdb-server.env.example` on first install) |
 | `/etc/systemd/system/simdb-server.service` | The systemd unit |
 
 The unit starts the stack from the installed Compose files, so the source
 checkout is no longer needed once `systemd-install` has run. Database and Redis
-state persist in the Compose named volumes and survives an uninstall.
+state persist in the Compose named volumes and are not removed by
+`systemd-uninstall`.
 
-### Configure
+Only `simdb.cfg` and `simdb-server.env` are configuration; the rest is fixed by
+the install. Neither requires rebuilding or re-pulling an image, and changing
+either is followed by `sudo make systemd-start` (or
+`systemctl restart simdb-server`). Nothing else on the host is part of the
+configuration.
 
-Edit `/etc/simdb-server/simdb-server.env` before starting the service. It
-selects the image and sets the Gunicorn runtime options; see
+### Configure container environment
+
+The unit already defaults to the published image, so a normal installation
+needs no changes here. Review `/etc/simdb-server/simdb-server.env` before
+starting the service and adjust it as needed: it selects the image and version,
+and sets the Gunicorn runtime options. See
 [docker/scripts/simdb-server.env.example](../../../docker/scripts/simdb-server.env.example)
-for every variable, commented out with its default.
+for the available variables and example values.
 
-By default the service runs the published image
-(`ghcr.io/iterorganization/simdb-server:latest`). To run an image built from your
-checkout instead, build it and point the environment file at it:
+The defaults are:
+
+```bash
+SIMDB_IMAGE=ghcr.io/iterorganization/simdb-server
+SIMDB_TAG=latest
+```
+
+The checked-in Compose defaults are `simdb-server:local`, and the systemd unit
+does not build images, so set `SIMDB_IMAGE` and `SIMDB_TAG` explicitly before
+starting a fresh installation. To run an image built from your checkout
+instead, build it and set the environment file to:
 
 ```bash
 make service
 ```
+
+Then point the environment file at it:
 
 ```bash
 # /etc/simdb-server/simdb-server.env
@@ -159,17 +182,28 @@ rather than tracking a moving tag:
 SIMDB_TAG=0.15.2
 ```
 
+### Configure SimDB Server
+
 The server itself is configured through the installed
 `/opt/simdb-server/config/simdb.cfg`, exactly as described in
-[Run with Docker Compose](run-with-docker.md#configure). Installation paths and
-the Compose project name can be overridden on the command line, for example
-`sudo make systemd-install package_optdir=/srv/simdb`.
+[Run with Docker Compose](run-with-docker.md#configure). The installed unit
+expects `/opt/simdb-server` and `/etc/simdb-server/simdb-server.env`; use these
+default paths for a live installation. `DESTDIR` can be used to stage files for
+packaging or inspection, but a staged unit is not ready to run until installed
+at those paths.
 
 `systemd-install` also creates `/opt/simdb-server/upload_folder` with ownership
 set to the container runtime UID/GID (`1000:1000` by default), because the web
-container runs as a non-root user and writes uploads through a bind mount. If
-you build a custom image with different `APP_UID`/`APP_GID` values, pass the
-same values to the install step so the host directory ownership matches:
+container runs as a non-root user and writes uploads through a bind mount. This
+is only the default location: set `SIMDB_UPLOAD_DIR` in
+`/etc/simdb-server/simdb-server.env` to use another directory, an absolute path
+or one relative to `/opt/simdb-server` (e.g. a network mount). The directory
+must already exist and be writable by the same UID/GID the container runs as;
+`systemd-install` only prepares the default path.
+
+If you use different `APP_UID`/`APP_GID` values, set them both in the environment
+file and pass the same values to the install step so the runtime identity and
+host directory ownership match:
 
 ```bash
 sudo make systemd-install APP_UID=1234 APP_GID=1234
