@@ -94,8 +94,17 @@ sudo install -d -m 0775 -o 1000 -g 1000 ./upload_folder
 ```
 
 Avoid world-writable workarounds such as `chmod a+rwX`. If you build your own
-image with different `APP_UID`/`APP_GID` values, apply the same numeric
-ownership to the host path.
+or configure non-default `APP_UID`/`APP_GID` values, apply the same numeric
+ownership to the host path and set those variables in the environment used by
+Compose.
+
+To use a different host directory for uploads, set `SIMDB_UPLOAD_DIR` when
+starting Compose. The directory must already be writable by the configured
+container UID/GID:
+
+```bash
+SIMDB_UPLOAD_DIR=/srv/simdb/uploads docker compose up --build
+```
 
 ### Gunicorn runtime
 

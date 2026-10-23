@@ -98,8 +98,11 @@ Day-to-day control:
 sudo make systemd-status
 sudo make systemd-stop
 sudo make systemd-disable   # stop and disable at boot
-sudo make systemd-uninstall # stop and remove installed files
+sudo make systemd-uninstall # stop/disable and print manual cleanup instructions
 ```
+
+`systemd-uninstall` does not delete files. It stops and disables the service,
+then prints the installed paths for you to review and remove manually.
 
 `make help` prints the same list, and the Compose targets
 (`up`, `down`, `logs-f`, `shell`, …) are available for running the stack without
@@ -116,18 +119,27 @@ installing a service. See
 
 The unit starts the stack from the installed Compose files, so the source
 checkout is no longer needed once `systemd-install` has run. Database and Redis
-state persist in the Compose named volumes and survives an uninstall.
+state persist in the Compose named volumes and are not removed by
+`systemd-uninstall`.
 
 ### Configure
 
 Edit `/etc/simdb-server/simdb-server.env` before starting the service. It
 selects the image and sets the Gunicorn runtime options; see
 [docker/scripts/simdb-server.env.example](../../../docker/scripts/simdb-server.env.example)
-for every variable, commented out with its default.
+for the available variables and example values.
 
-By default the service runs the published image
-(`ghcr.io/iterorganization/simdb-server:latest`). To run an image built from your
-checkout instead, build it and point the environment file at it:
+To run the published image, set these values in the environment file:
+
+```bash
+SIMDB_IMAGE=ghcr.io/iterorganization/simdb-server
+SIMDB_TAG=latest
+```
+
+The checked-in Compose defaults are `simdb-server:local`, and the systemd unit
+does not build images, so set `SIMDB_IMAGE` and `SIMDB_TAG` explicitly before
+starting a fresh installation. To run an image built from your checkout
+instead, build it and set the environment file to:
 
 ```bash
 make service
@@ -161,15 +173,18 @@ SIMDB_TAG=0.15.2
 
 The server itself is configured through the installed
 `/opt/simdb-server/config/simdb.cfg`, exactly as described in
-[Run with Docker Compose](run-with-docker.md#configure). Installation paths and
-the Compose project name can be overridden on the command line, for example
-`sudo make systemd-install package_optdir=/srv/simdb`.
+[Run with Docker Compose](run-with-docker.md#configure). The installed unit
+expects `/opt/simdb-server` and `/etc/simdb-server/simdb-server.env`; use these
+default paths for a live installation. `DESTDIR` can be used to stage files for
+packaging or inspection, but a staged unit is not ready to run until installed
+at those paths.
 
 `systemd-install` also creates `/opt/simdb-server/upload_folder` with ownership
 set to the container runtime UID/GID (`1000:1000` by default), because the web
 container runs as a non-root user and writes uploads through a bind mount. If
-you build a custom image with different `APP_UID`/`APP_GID` values, pass the
-same values to the install step so the host directory ownership matches:
+you use different `APP_UID`/`APP_GID` values, set them both in the environment
+file and pass the same values to the install step so the runtime identity and
+host directory ownership match:
 
 ```bash
 sudo make systemd-install APP_UID=1234 APP_GID=1234
