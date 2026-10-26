@@ -119,6 +119,7 @@ simdb = ["py.typed", "LICENSE"]
 
 [tool.setuptools_scm]
 write_to = "src/simdb/_version.py"
+version_scheme = "no-guess-dev"
 local_scheme = "dirty-tag"
 
 [tool.ruff]
