@@ -145,16 +145,16 @@ SIMDB_IMAGE=ghcr.io/iterorganization/simdb-server
 SIMDB_TAG=latest
 ```
 
-The checked-in Compose defaults are `simdb-server:local`, and the systemd unit
-does not build images, so set `SIMDB_IMAGE` and `SIMDB_TAG` explicitly before
-starting a fresh installation. To run an image built from your checkout
-instead, build it and set the environment file to:
+The unit never builds images, so whichever name it resolves to must already
+exist locally or in the registry; the Compose-file default of
+`simdb-server:local` is not produced automatically and would fail to start. To
+run an image built from your checkout instead, build it with:
 
 ```bash
 make service
 ```
 
-Then point the environment file at it:
+And set the enviroment to use this image:tag :
 
 ```bash
 # /etc/simdb-server/simdb-server.env
