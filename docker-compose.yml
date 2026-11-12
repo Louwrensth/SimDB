@@ -105,7 +105,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:8.6.6-alpine3.23@sha256:23a604374ece8069b34131faac7a1f05ae73c64280e46af1de844f29af2846d4
+    image: redis:8.10.2-alpine3.23@sha256:9f8d2d789b9a1d1e3f283f979aa9cbf393373806472e1ccd460e2f9c869b833b
     volumes:
       - redis_data:/data
     healthcheck:
