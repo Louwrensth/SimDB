@@ -105,7 +105,7 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:8.6.6-alpine3.23@sha256:23a604374ece8069b34131faac7a1f05ae73c64280e46af1de844f29af2846d4
+    image: redis:8.10.2-alpine3.23@sha256:9f8d2d789b9a1d1e3f283f979aa9cbf393373806472e1ccd460e2f9c869b833b
     volumes:
       - redis_data:/data
     healthcheck:
@@ -116,7 +116,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:17.11-alpine3.23@sha256:bc2701f9a79f9248bcb18743bc9b2c732d9a1d16737ca44a8f577752fc43b61f
+    image: postgres:18.4-alpine3.23@sha256:996d0920e4ff9df1fc19dacb904492f3c1ec0ec1cc338f0ad7123be7731c5f5e
     environment:
       - POSTGRES_USER=simdb
       - POSTGRES_PASSWORD=simdb
