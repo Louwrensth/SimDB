@@ -1,5 +1,5 @@
 # Build stage: Install dependencies and prepare the application
-FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
+FROM ghcr.io/astral-sh/uv:0.13.7-python3.12-trixie-slim@sha256:d4a752dd52f42e0c508bb0b6a912f15922bb32e42f66af30671c3fdc0d759f21 \
     AS build
 
 ENV UV_LINK_MODE=copy \
@@ -33,7 +33,7 @@ RUN uv sync --locked --no-dev --extra all
 ENV SIMDB_SITE_CONFIG_PATH=/app/config/simdb.cfg
 
 # Runtime stage: Minimal image with only runtime dependencies
-FROM ghcr.io/astral-sh/uv:0.12.17-python3.12-trixie-slim@sha256:9a59bb7206905ccaae4f7dab222fbac47c125a21e5fc16f43f427cd6c940ade3 \
+FROM ghcr.io/astral-sh/uv:0.13.7-python3.12-trixie-slim@sha256:d4a752dd52f42e0c508bb0b6a912f15922bb32e42f66af30671c3fdc0d759f21 \
     AS service
 
 ENV UV_LINK_MODE=copy \
